@@ -8,6 +8,7 @@ default_solver = 'gurobi'
 # Try to import gurobi
 try:
     from gurobipy import *
+    import gurobipy
     TIME_LIMIT = 10 * 3600
 
 except Exception as e:
@@ -233,6 +234,7 @@ def _solve_gurobi(c, Aiq, biq, Aeq, beq, J_int, J_bin, output):
              x >= 0
         using the Gurobi solver
     """
+    import gurobipy
     num_var = Aiq.shape[1]
 
     Aiq = Aiq.tocsr()
