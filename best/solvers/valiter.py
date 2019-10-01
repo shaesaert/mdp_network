@@ -155,7 +155,7 @@ def solve_ssp(network, costs, target, M=np.Inf, prec=1e-5, verbose =False):
   return V_new, np.unravel_index( Q.argmin(axis=0).astype(DTYPE_ACTION, copy=False), network.M)
 
 
-def solve_ltl_cosafe(network, formula, predicates, delta=0., horizon=np.Inf, verbose=False):
+def solve_ltl_cosafe(network: object, formula: object, predicates: object, delta: object = 0., horizon: object = np.Inf, verbose: object = False) -> object:
   '''synthesize a policy that maximizes the probability of
      satisfaction of formula
      Inputs:

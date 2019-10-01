@@ -2,45 +2,51 @@ import numpy as np
 
 from best.models.pomdp import POMDP, POMDPNetwork
 from best.solvers.valiter import *
+import unittest
 
-def test_ssp_valiter1():
+class TEST_SPARSE_UTILS(unittest.TestCase):
 
-  T1 = np.array([[0, 0, 0, 1, 0],
-                 [0, 1, 0, 0, 0],
-                 [0, 0, 1, 0, 0],
-                 [0, 0, 0, 1, 0],
-                 [0, 0, 0, 0, 1]])
+    def test_ssp_valiter1(self):
 
-  T2 = np.array([[0,  1,   0,  0,   0],
-               [ 0,   0, 0.5,  0, 0.5],
-               [ 0,   0,   0,  0,   1],
-               [ 0,   0,   0,  0,   1],
-               [ 0,   0,   0,  0,   1]])
+      T1 = np.array([[0, 0, 0, 1, 0],
+                     [0, 1, 0, 0, 0],
+                     [0, 0, 1, 0, 0],
+                     [0, 0, 0, 1, 0],
+                     [0, 0, 0, 0, 1]])
 
-  pomdp = POMDP([T1, T2])
+      T2 = np.array([[0,  1,   0,  0,   0],
+                   [ 0,   0, 0.5,  0, 0.5],
+                   [ 0,   0,   0,  0,   1],
+                   [ 0,   0,   0,  0,   1],
+                   [ 0,   0,   0,  0,   1]])
 
-  network = POMDPNetwork([pomdp])
+      pomdp = POMDP([T1, T2])
 
-  costs = np.ones([2, 5])
-  costs[1,2] = 50
-  costs[1,3] = 20
-  costs[:,4] = 0
+      network = POMDPNetwork([pomdp])
 
-  target = np.array([0, 0, 0, 0, 1])
+      costs = np.ones([2, 5])
+      costs[1,2] = 50
+      costs[1,3] = 20
+      costs[:,4] = 0
 
-  val, pol = solve_ssp(network, costs, target, M=1000)
+      target = np.array([0, 0, 0, 0, 1])
 
-  np.testing.assert_almost_equal(val, [21, 26, 50, 20, 0])
+      val, pol = solve_ssp(network, costs, target, M=1000)
 
-def test_ssp_valiter2():
+      np.testing.assert_almost_equal(val, [21, 26, 50, 20, 0])
 
-  T0 = np.array([[0.1, 0.9, 0], [0, 1, 0], [0, 0, 1]])
-  network = POMDPNetwork([POMDP([T0])])
+    def test_ssp_valiter2(self):
 
-  costs = np.ones([1,3])
-  target = np.array([0,1,0])
+      T0 = np.array([[0.1, 0.9, 0], [0, 1, 0], [0, 0, 1]])
+      network = POMDPNetwork([POMDP([T0])])
 
-  val, pol = solve_ssp(network, costs, target, M=10)
+      costs = np.ones([1,3])
+      target = np.array([0,1,0])
 
-  np.testing.assert_almost_equal(val, [1/0.9, 0, np.Inf], decimal=4)
+      val, pol = solve_ssp(network, costs, target, M=10)
 
+      np.testing.assert_almost_equal(val, [1/0.9, 0, np.Inf], decimal=4)
+
+
+if __name__ == "__main__":
+    unittest.main()

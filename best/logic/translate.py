@@ -26,7 +26,7 @@ def formula_to_logic(formula):
   return POMDP(T, input_names=input_names, state_name='_'.join(input_names))
 
 
-def formula_to_pomdp(formula):
+def formula_to_pomdp(formula: object) -> object:
   '''convert a co-safe LTL formula to a DFSA represented as a   
   special case of a POMPD'''
   

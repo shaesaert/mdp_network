@@ -224,7 +224,7 @@ def solCallback(model, where):
             model.terminate()
 
 
-def _solve_gurobi(c, Aiq, biq, Aeq, beq, J_int, J_bin, output):
+def _solve_gurobi(c: object, Aiq: object, biq: object, Aeq: object, beq: object, J_int: object, J_bin: object, output: object) -> object:
     """
         Solve optimization problem
         min c' x
