@@ -1,23 +1,32 @@
 import sparse
 import numpy as np
-
+import time
 def diagonal(a, axis1, axis2):
   '''perform diagonal operation on tensor a:
     Ex: diagonal over x,z on A_xyzw gives Bxzy (new dimension appended at the end)
     Analogous to np.diagonal'''
 
+  # example: L_QSasq = diagonal(L_SQasqS, axis1=0, axis2=5)
+
   if a.shape[axis1] != a.shape[axis2]:
     raise Exception('dimensions must agree for diagonal')
 
+  t_before = time.time()
   new_axis_order = [axis for axis in range(len(a.shape)) if axis != axis1 and axis != axis2] + [axis1]
 
   new_shape = [a.shape[axis] for axis in new_axis_order]
-
+  t_part1 = time.time()
   idx_diag = [i for i in range(len(a.data)) if a.coords[axis1][i] == a.coords[axis2][i]]
+  t_part2 = time.time()
 
   new_coord = [[a.coords[axis][i] for i in idx_diag] for axis in new_axis_order]
   new_data  = [a.data[i] for i in idx_diag]
 
+  t_after = time.time()
+  print("pomdp_sparse_utils diagonal - part 1 ", t_part1-t_before)
+  print("pomdp_sparse_utils diagonal - part 2", t_part2-t_before)
+
+  print("pomdp_sparse_utils diagonal", t_after-t_before)
   return sparse.COO(new_coord, new_data, new_shape)
 
 

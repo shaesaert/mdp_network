@@ -206,17 +206,16 @@ class DemoTestCase2(unittest.TestCase):
     delt = []
     reach = []
     val = []
-    for delta in np.linspace(0.0001, 0.05, 1):
+    for delta in np.linspace(0.0001, 0.05, 5):
       t=time.time()
       delt += [delta]
       reach_prob, val2 = solve_delta(P_asS, P_lqQ, conn, delta, s0=0, q0=0, q_target=1)
       reach += [reach_prob]
-      val += [val2]
+      val += [np.sum(val2, axis=0)]
       print(time.time()-t)
       # print(val2)
     # np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0],decimal=5)
     print(reach)
-    print(val2)
 
 
 

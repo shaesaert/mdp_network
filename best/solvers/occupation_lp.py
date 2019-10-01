@@ -9,7 +9,7 @@ import scipy.sparse as sp
 
 from best.models.pomdp_sparse_utils import *
 from best.solvers.optimization_wrappers import Constraint, solve_ilp
-
+import time
 
 def solve_exact(P_asS, P_lqQ, conn_mat, s0, q0, q_target):
 
@@ -87,13 +87,12 @@ def solve_exact(P_asS, P_lqQ, conn_mat, s0, q0, q_target):
     return -1, -1
 
 
-
-def solve_delta(P_asS, P_lqQ, conn_mat,delta, s0, q0, q_target):
-
-  na = P_asS.shape[0]
-  ns = P_asS.shape[1]
-  nl = P_lqQ.shape[0]
-  nq = P_lqQ.shape[1]
+def solve_delta(P_asS, P_lqQ, conn_mat, delta, s0, q0, q_target):
+  t = time.time()
+  na = P_asS.shape[0]  # number of actions of MDP
+  ns = P_asS.shape[1]  # number of states of MDP
+  nl = P_lqQ.shape[0]  # number of labels of DFA
+  nq = P_lqQ.shape[1]  # number of states of DFA
   nk = nl*2+2
 
   if q_target != nq-1:
@@ -125,8 +124,8 @@ def solve_delta(P_asS, P_lqQ, conn_mat,delta, s0, q0, q_target):
   # left-hand side
   L_SlQasq = sparse.tensordot(P_asS, P_lqQ_notarget, axes=-1).transpose([2, 3, 5, 0, 1, 4]) #
   L_SQasqS = sparse.tensordot(L_SlQasq, P_lS, axes=[[1], [0]])
-  L_QSasq = diagonal(L_SQasqS, axis1=0, axis2=5).transpose([0,4,1,2,3])
-  L_QS_asq_sp = L_QSasq.reshape([nq_notarget * ns, na * ns * nq_notarget]).to_scipy_sparse()
+  L_QSasq = np.diagonal(L_SQasqS.todense(), axis1=0, axis2=5).transpose([0,4,1,2,3])
+  L_QS_asq_sp = sp.csr_matrix(L_QSasq.reshape([nq_notarget * ns, na * ns * nq_notarget]))
 
   # TODO: indexing needs fix to have q_target not being the last one
   b_iq_b = np.zeros(ns * nq_notarget)
@@ -154,8 +153,11 @@ def solve_delta(P_asS, P_lqQ, conn_mat,delta, s0, q0, q_target):
 
   objective = np.ones(num_varP + num_varX)*delta
   objective[0] = -1  # maximize P
-
+  t_init = time.time()
+  print(["Initiate solver: ", t_init- t] )
   sol = solve_ilp(objective, c, J_int=[])
+  t_solve = time.time()
+  print(["Run solver: ", t_solve-t_init])
 
   if sol['status'] == 'optimal':
     return -sol['primal objective'], sol['x'][num_varP: num_varP+num_varX].reshape((na, ns, nq_notarget))
@@ -169,6 +171,7 @@ def solve_robust(P_asS, P_lqQ, conn_mat, s0, q0, q_target):
   # consisting of two mdps P_{uxx'} and Q_{vyy'}, 
   # where x' yields (nondeterministic) inputs v
 
+  t = time.time()
   na = P_asS.shape[0]
   ns = P_asS.shape[1]
   nl = P_lqQ.shape[0]
@@ -270,8 +273,11 @@ def solve_robust(P_asS, P_lqQ, conn_mat, s0, q0, q_target):
 
   objective = np.zeros(num_varP + num_varX + num_var1 + num_var2)
   objective[0] = -1  # maximize P
-
+  t_init = time.time()
+  print(["Initiate solver: ", t_init- t] )
   sol = solve_ilp(objective, c, J_int=[])
+  t_solve = time.time()
+  print(["Run solver: ", t_solve-t_init])
 
   ########################################################
 
