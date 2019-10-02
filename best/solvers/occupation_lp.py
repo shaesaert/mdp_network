@@ -384,19 +384,18 @@ def solve_deltav2(P_asS, P_lqQ, conn_mat, delta, s0, q0, q_target):
 
 
 def solve_pure_occ(P,T,S0,delta):
-  nST = len(P[0])  # number of states not in T
-  nT = len(T)  # number of states in T
+  nST = len(P[0])-1  # number of states not in T
+  nT = 1  # number of states in T
   na = len(P)  # number of actions
-
+  if not isinstance(T, list): T = [T]
   # check the shape of P
   # should be 2 actions and 3 states
-  print(len(P))
 
   model = grb.Model("prob0")
   y = dict()
   for a in range(na):
     for s in range(nST):
-      y[s, a] = model.addVar(vtype=grb.GRB.CONTINUOUS, obj=-delta + P[a][s][T[0]])
+      y[s, a] = model.addVar(vtype=grb.GRB.CONTINUOUS, obj=-delta + sum(P[a][s][t] for t in T))
   model.update()
 
   x = []
@@ -406,8 +405,7 @@ def solve_pure_occ(P,T,S0,delta):
   xi = []
   for sn in range(nST):  # compute incoming occup
     # from s to s' sum_a x_sa Ps,a,s'
-    print(sn)
-    xi += [grb.quicksum(y[s, a] * P[a][s][sn] for a in range(na) for s in range(nST))]
+    xi += [grb.quicksum(y[s, a] * P[a][s][sn] for a in range(na) for s in range(nST) if (P[a][s][sn] > 10e-10) ) ]
 
   lhs = [x[i] - xi[i] for i in range(len(xi))]
   rhs = [0] * nST
@@ -425,19 +423,12 @@ def solve_pure_occ(P,T,S0,delta):
   #
   for i in range(nST):
     model.addConstr(lhs[i] <= rhs[i])
-    print(lhs[i], rhs[i])
 
   model.ModelSense = -1
-  model.update()
-  print('obj', model.getObjective())
+  # model.update()
 
-  print('cnstrs 1', model.getConstrs()[0])
-  print('cnstrs 2')
-  print(model.getConstrs()[1])
   # model.setObjective(obj, grb.GRB.MAXIMIZE)
-  print(model)
   model.optimize()
-  print(y)
 
   sol = {}
   if model.status == grb.GRB.status.OPTIMAL:
@@ -448,7 +439,7 @@ def solve_pure_occ(P,T,S0,delta):
   else:
     sol['rcode'] = 1
 
-  return sol
+  return model,sol
 
 
 

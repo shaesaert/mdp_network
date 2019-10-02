@@ -4,7 +4,7 @@ def main():
   setup(
       name='best',
       version='0.2',
-      packages=['best', 'best.models', 'best.solvers', 'best.abstraction', 'best.logic'],
+      packages=['best', 'best.models', 'best.solvers', 'best.abstraction', 'best.logic', "best.policies"],
       license='BSD-3',
       author='Petter Nilsson',
       author_email='pettni@caltech.edu',

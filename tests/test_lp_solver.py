@@ -161,7 +161,7 @@ class test_lp_solvers(unittest.TestCase):
 
     def test_func(self):
         P = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[.5, .2, .3], [.4, .6, 0], [0, 0, 1]]]
-        T = [2]  # the target state is the last state :)
+        T = 2  # the target state is the last state :)
         S0 = 0  # the initial state
         delta = 0.01
 
