@@ -1,6 +1,7 @@
 import unittest
 
 from best.models.pomdp import POMDP, POMDPNetwork
+from best.models.pomdp_sparse_utils import get_T_uxXz, diagonal
 from best.solvers.occupation_lp import *
 from best.solvers.valiter import *
 
@@ -102,47 +103,6 @@ class DemoTestCase2(unittest.TestCase):
     reach_prob, _ = solve_robust(P_asS, P_lqQ, conn, s0=2, q0=0, q_target=1)
     np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
 
-  def test_ltl_synth(self):
-    delta: object = 0.
-    T1 = np.array([[0.25, 0.25, 0.25, 0.25], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    T2 = np.array([[0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 1, 0], [0.9, 0, 0, 0.1]])
-
-    system = POMDP([T1, T2], state_name='x')
-
-    network = POMDPNetwork([system])
-
-    formula = '( ( F s1 ) & ( F s2 ) )'
-
-    predicates = {'s1': (['x'], lambda x: set([int(x==1)])),
-             's2': (['x'], lambda x: set([int(x==3)]))}
-
-    dfsa, dfsa_init, dfsa_final = formula_to_pomdp(formula)
-
-    network_copy = copy.deepcopy(network)
-
-    network_copy.add_pomdp(dfsa)
-    print(network_copy)
-    for ap, (outputs, conn) in predicates.items():
-      if ap in dfsa.input_names:
-        network_copy.add_connection(outputs, ap, conn)
-
-    Vacc = np.zeros(network_copy.N)
-    Vacc[..., list(dfsa_final)[0]] = 1
-
-
-    val, pol = solve_reach(network_copy, Vacc, delta=delta)
-    P_asS = diagonal(get_T_uxXz(network_copy.pomdps['x']), 2, 3)
-    P_lqQ = diagonal(get_T_uxXz(network_copy.pomdps['mu']), 2, 3)
-    conn = network_copy.connections[0][2]
-
-    reach_prob, _ = solve_robust(P_asS, P_lqQ, conn, s0=0, q0=list(dfsa_init)[0], q_target=list(dfsa_final)[0])
-
-    print(reach_prob)
-    np.testing.assert_almost_equal(pol.val[0][:,0], [0.5, 0, 0, 0.5], decimal=4)
-
-    np.testing.assert_almost_equal(reach_prob,val[0,0], decimal=9)
-
-
   def test_demo(self):
     from Demos.demo_Models import simple_robot
     import polytope as pc
@@ -195,7 +155,7 @@ class DemoTestCase2(unittest.TestCase):
     for delta in np.linspace(0.0001, 0.05, 5):
       t=time.time()
       delt += [delta]
-      reach_prob, val2 = solve_deltav2(P_asS, P_lqQ, conn, delta, s0=0, q0=0, q_target=1)
+      reach_prob, val2 = solve_delta(P_asS, P_lqQ, conn, delta, s0=0, q0=0, q_target=1)
       reach += [reach_prob]
       val += [np.sum(val2, axis=0)]
       print(time.time()-t)
@@ -282,6 +242,8 @@ class DemoTestCase2(unittest.TestCase):
     # np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0],decimal=5)
     print("reach prob",reach)
     print("solve time ",t_list)
+
+
 
 
 

@@ -3,10 +3,20 @@
 Currently only support two-part networks (e.g., MDP + automaton) with potentially
 nondeterministic connections
 '''
+import numpy as np
 import scipy.sparse as sp
+import sparse
 import time
 
-from best.models.pomdp_sparse_utils import *
+try:
+    import gurobipy as grb
+    TIME_LIMIT = 10 * 3600
+
+except Exception as e:
+    print("warning: gurobi not found")
+
+
+
 from best.solvers.optimization_wrappers import Constraint, solve_ilp
 
 
@@ -370,4 +380,75 @@ def solve_deltav2(P_asS, P_lqQ, conn_mat, delta, s0, q0, q_target):
   else:
     print("solver returned {}".format(sol['status']))
     return -1, -1
+
+
+
+def solve_pure_occ(P,T,S0,delta):
+  nST = len(P[0])  # number of states not in T
+  nT = len(T)  # number of states in T
+  na = len(P)  # number of actions
+
+  # check the shape of P
+  # should be 2 actions and 3 states
+  print(len(P))
+
+  model = grb.Model("prob0")
+  y = dict()
+  for a in range(na):
+    for s in range(nST):
+      y[s, a] = model.addVar(vtype=grb.GRB.CONTINUOUS, obj=-delta + P[a][s][T[0]])
+  model.update()
+
+  x = []
+  for s in range(nST):  # compute occupation
+    x += [grb.quicksum(y[s, a] for a in range(na))]
+
+  xi = []
+  for sn in range(nST):  # compute incoming occup
+    # from s to s' sum_a x_sa Ps,a,s'
+    print(sn)
+    xi += [grb.quicksum(y[s, a] * P[a][s][sn] for a in range(na) for s in range(nST))]
+
+  lhs = [x[i] - xi[i] for i in range(len(xi))]
+  rhs = [0] * nST
+  rhs[S0] = 1
+
+  # H = grb.quicksum(delta*y[s, a] for a in range(na) for s in range(nST))
+  # obj = grb.quicksum(y[s, a]*P[a][s][sn] for a in range(na) for s in range(nST) for sn in T) - H
+  # print('obj',obj)
+  # b = np.array([1, 2, 3, 4, 5]).reshape(-1, 1)
+  # c = np.array([1, 2, 3, 4, 5]).reshape(-1, 1)
+  #
+  #
+  # # Create a new model
+  #
+  #
+  for i in range(nST):
+    model.addConstr(lhs[i] <= rhs[i])
+    print(lhs[i], rhs[i])
+
+  model.ModelSense = -1
+  model.update()
+  print('obj', model.getObjective())
+
+  print('cnstrs 1', model.getConstrs()[0])
+  print('cnstrs 2')
+  print(model.getConstrs()[1])
+  # model.setObjective(obj, grb.GRB.MAXIMIZE)
+  print(model)
+  model.optimize()
+  print(y)
+
+  sol = {}
+  if model.status == grb.GRB.status.OPTIMAL:
+    sol['x'] = np.array([var.x for var in y.values()])
+    sol['primal objective'] = model.objVal
+  if model.status in [2, 3, 5]:
+    sol['rcode'] = model.status
+  else:
+    sol['rcode'] = 1
+
+  return sol
+
+
 

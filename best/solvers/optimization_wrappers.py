@@ -1,6 +1,5 @@
-import sys
-import scipy.sparse as sp
 import numpy as np
+import scipy.sparse as sp
 from dataclasses import dataclass
 
 default_solver = 'gurobi'
@@ -75,7 +74,7 @@ class Constraint(object):
 
         return self
 
-def solve_ilp(c, constraint, J_int=None, J_bin=None, solver=default_solver, output=0):
+def solve_ilp(c: object, constraint: object, J_int: object = None, J_bin: object = None, solver: object = default_solver, output: object = 0) -> object:
     """
     Solve the ILP
         min c' x
@@ -235,6 +234,8 @@ def _solve_gurobi(c: object, Aiq: object, biq: object, Aeq: object, beq: object,
         using the Gurobi solver
     """
     import gurobipy
+
+
     num_var = Aiq.shape[1]
 
     Aiq = Aiq.tocsr()
