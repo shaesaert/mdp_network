@@ -12,3 +12,8 @@ control
 matplotlib
 matplotlib2tikz
 sparse
+git+ssh://git@github.com/shaesaert/eps_del_abstract.git@master#egg=eps_del
+git+ssh://git@github.com/shaesaert/polytope#egg=polytope
+git+ssh://git@github.com/shaesaert/modred#egg=modred
+
+

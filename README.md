@@ -13,6 +13,8 @@ This package is developed for Python 3.6. Install necessary packages
     sudo apt install graphviz-dev 
     pip install -r requirements.txt 
     
+    
+    
 Install the ``best`` package as follows:
 
     python setup.py install
@@ -29,6 +31,12 @@ To use ROS-based controllers, in addition these packages are needed
 
     pip install rospkg catkin-tools pyyaml
 
+
+To be able to test the perfoamce of the LP, also install the packages from the private repositories 
+
+    pip install git+ssh://git@github.com/shaesaert/eps_del_abstract.git@master#egg=eps_del
+    pip install git+ssh://git@github.com/shaesaert/polytope#egg=polytope
+    pip install git+ssh://git@github.com/shaesaert/modred#egg=modred
 
 # TODO
 
