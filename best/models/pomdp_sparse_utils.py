@@ -11,23 +11,14 @@ def diagonal(a, axis1, axis2):
   if a.shape[axis1] != a.shape[axis2]:
     raise Exception('dimensions must agree for diagonal')
 
-  t_before = time.time()
-  new_axis_order = [axis for axis in range(len(a.shape)) if axis != axis1 and axis != axis2] + [axis1]
+  new_axis_order = np.array([axis for axis in range(len(a.shape)) if axis != axis1 and axis != axis2] + [axis1])
 
   new_shape = [a.shape[axis] for axis in new_axis_order]
-  t_part1 = time.time()
-  idx_diag = [i for i in range(len(a.data)) if a.coords[axis1][i] == a.coords[axis2][i]]
-  t_part2 = time.time()
 
-  new_coord = [[a.coords[axis][i] for i in idx_diag] for axis in new_axis_order]
-  new_data  = [a.data[i] for i in idx_diag]
+  idx_diag = a.coords[axis1] == a.coords[axis2]
+  crds = a.coords[:, idx_diag]
 
-  t_after = time.time()
-  print("pomdp_sparse_utils diagonal - part 1 ", t_part1-t_before)
-  print("pomdp_sparse_utils diagonal - part 2", t_part2-t_before)
-
-  print("pomdp_sparse_utils diagonal", t_after-t_before)
-  return sparse.COO(new_coord, new_data, new_shape)
+  return sparse.COO(crds[new_axis_order, :], a.data[idx_diag], new_shape)
 
 
 def diag(a, axis):
@@ -39,7 +30,7 @@ def diag(a, axis):
 
 
 def get_T_uxXz(pomdp):
-  return sparse.stack([sparse.stack([sparse.COO(pomdp.Tuz(m_tuple, z)) 
+  return sparse.stack([sparse.stack([sparse.COO(pomdp.Tuz(m_tuple, z))
                                        for z in range(pomdp.O)],
                                       axis=-1)
                          for m_tuple in pomdp.m_tuple_iter()]) \
@@ -49,7 +40,7 @@ def propagate_distribution(pomdp, D_ux, u_dim=None, x_dim=None):
   '''evolve input/state distribution D_ux into output distribution D_xz
     D_xz(x', z) = \sum_{x', u) P(X+ = x, Z = z | U = u X = x' ) D_ux(u, x')
   '''
-  
+
   if u_dim is None:
     u_dim = tuple(range(len(pomdp.M)))
 
@@ -61,11 +52,11 @@ def propagate_distribution(pomdp, D_ux, u_dim=None, x_dim=None):
 
   if len(D_ux.shape) <= max(u_dim + x_dim) or len(set(u_dim + x_dim)) < len(u_dim + x_dim) or sum(D_ux.data) != 1:
       raise Exception('D_ux not a valid distribution')
-    
+
   T_uxXz = get_T_uxXz(pomdp)
-  
+
   T_zx = sparse.tensordot(D_ux, T_uxXz, axes=(u_dim + x_dim, range(len(pomdp.M)+1))  )
-  
+
   return sparse.COO(T_zx)
 
 
@@ -80,7 +71,7 @@ def propagate_network_distribution(network, D):
     raise Exception('wrong dimension of D')
 
   slice_names = list(network.input_names) + list(network.state_names)
-  treated_inputs = [] 
+  treated_inputs = []
 
   for name, pomdp in network.forward_iter():
     # index of current state
@@ -101,7 +92,7 @@ def propagate_network_distribution(network, D):
       # diagonalization here: https://github.com/nils-werner/sparse/compare/master...nils-werner:einsum#diff-774b84c1fc5cd6b86a14c41931aca83bR356
 
       if all([output in slice_names for output in outputs]) and inp not in treated_inputs:
-        # outer tensor product -- D_xzuz 
+        # outer tensor product -- D_xzuz
         D = sparse.tensordot(D, sparse.COO(D_uz), axes=0)
         slice_names = slice_names + [inp] + [output + '_z' for output in outputs]
 
