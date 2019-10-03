@@ -29,6 +29,10 @@ def diag(a, axis):
   return sparse.COO(new_coord, a.data, new_shape)
 
 
+def get_T_uxX(pomdp):
+  return sparse.stack([sparse.COO(pomdp.T(m_tuple)) for m_tuple in pomdp.m_tuple_iter()])
+
+
 def get_T_uxXz(pomdp):
   return sparse.stack([sparse.stack([sparse.COO(pomdp.Tuz(m_tuple, z))
                                        for z in range(pomdp.O)],

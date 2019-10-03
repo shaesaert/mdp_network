@@ -8,6 +8,8 @@ import scipy.sparse as sp
 import sparse
 import time
 
+from best.models.pomdp_sparse_utils import diag, diagonal
+
 try:
     import gurobipy as grb
     TIME_LIMIT = 10 * 3600
@@ -95,7 +97,6 @@ def solve_exact(P_asS, P_lqQ, conn_mat, s0, q0, q_target):
     print("solver returned {}".format(sol['status']))
     return -1, -1
 
-
 def solve_delta(P_asS, P_lqQ, conn_mat, delta, s0, q0, q_target):
   t = time.time()
   na = P_asS.shape[0]  # number of actions of MDP
@@ -133,8 +134,8 @@ def solve_delta(P_asS, P_lqQ, conn_mat, delta, s0, q0, q_target):
   # left-hand side
   L_SlQasq = sparse.tensordot(P_asS, P_lqQ_notarget, axes=-1).transpose([2, 3, 5, 0, 1, 4]) #
   L_SQasqS = sparse.tensordot(L_SlQasq, P_lS, axes=[[1], [0]])
-  L_QSasq = np.diagonal(L_SQasqS.todense(), axis1=0, axis2=5).transpose([0,4,1,2,3])
-  L_QS_asq_sp = sp.csr_matrix(L_QSasq.reshape([nq_notarget * ns, na * ns * nq_notarget]))
+  L_QSasq = diagonal(L_SQasqS, axis1=0, axis2=5).transpose([0,4,1,2,3])
+  L_QS_asq_sp = L_QSasq.reshape([nq_notarget * ns, na * ns * nq_notarget]).to_scipy_sparse()
 
   # TODO: indexing needs fix to have q_target not being the last one
   b_iq_b = np.zeros(ns * nq_notarget)
