@@ -238,8 +238,8 @@ def _solve_gurobi(c: object, Aiq: object, biq: object, Aeq: object, beq: object,
 
     num_var = Aiq.shape[1]
 
-    Aiq = Aiq.tocsr()
-    Aeq = Aeq.tocsr()
+    Aiq = sp.csr_matrix(Aiq)
+    Aeq = sp.csr_matrix(Aeq)
 
     m = Model()
 

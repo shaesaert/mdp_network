@@ -60,6 +60,7 @@ class DemoTestCase2(unittest.TestCase):
     reach_prob, _ = solve_exact(P_asS, P_lqQ, conn, s0=2, q0=0, q_target=1)
     np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
 
+
   def test_occupation2(self):
     import numpy as np
     # nondeterministic problem without solution
@@ -90,15 +91,16 @@ class DemoTestCase2(unittest.TestCase):
     P_asS = diagonal(get_T_uxXz(network.pomdps['s']), 2, 3)
     P_lqQ = diagonal(get_T_uxXz(network.pomdps['q']), 2, 3)
     conn = network.connections[0][2]
+    strat = np.array([[0]*(P_asS.shape[2]),[1]*(P_asS.shape[2])]).transpose()
+    strat = strat[conn]
+    model,reach_prob = solve_ltl(P_asS, P_lqQ, strat,0, s0=0, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][0, 0])
 
-    reach_prob, _ = solve_robust(P_asS, P_lqQ, conn, s0=0, q0=0, q_target=1)
-    np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
+    model, reach_prob = solve_ltl(P_asS, P_lqQ, strat, 0, s0=1, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][0, 0])
 
-    reach_prob, _ = solve_robust(P_asS, P_lqQ, conn, s0=1, q0=0, q_target=1)
-    np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
-
-    reach_prob, _ = solve_robust(P_asS, P_lqQ, conn, s0=2, q0=0, q_target=1)
-    np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
+    model, reach_prob = solve_ltl(P_asS, P_lqQ, strat, 0, s0=2, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][0, 0])
 
   def test_demo(self):
     from Demos.demo_Models import simple_robot
@@ -222,14 +224,19 @@ class DemoTestCase2(unittest.TestCase):
       val_list, pol_list = solve_reach(network, accept)
       P_asS = diagonal(get_T_uxXz(network.pomdps['s']), 2, 3)
       P_lqQ = diagonal(get_T_uxXz(network.pomdps['q']), 2, 3)
-      conn = network.connections[0][2]
+      conn = network.connections[0][2].transpose()
 
       t=time.time()
       delta = 0.01
       delt += [delta]
-      reach_prob, val2 = solve_delta(P_asS, P_lqQ, conn, delta, s0=0, q0=0, q_target=1)
-      reach += [reach_prob]
-      val += [np.sum(val2, axis=0)]
+      # reach_prob, val2 = solve_delta(P_asS, P_lqQ, conn, delta, s0=0, q0=0, q_target=1)
+      strat = np.array([[0] * (P_asS.shape[2]), [1] * (P_asS.shape[2])]).transpose()
+      strat = strat[conn]
+
+      model, reach_prob = solve_ltl(P_asS.todense(), P_lqQ.todense(), strat, delta, s0=0, q0=0, q_target=1)
+      # np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][0, 0], decimal=5)
+
+      reach += [reach_prob['primal objective']]
       t_list += [time.time()-t]
       print(time.time()-t)
 
@@ -255,13 +262,14 @@ class DemoTestCase2(unittest.TestCase):
 
 
       d_opt = np.array([[0.69294], [0.721]])  # tuned gridding ratio from a previous paper
-      d = 1.4 * d_opt  # with distance measure 0.6=default
+      d = 0.6 * d_opt  # with distance measure 0.6=default
       un = 3
 
       Ms, srep  = griddd(Robot, d, un=un)
 
-      T00 = Ms.transition
 
+      T00 = Ms.transition
+      print(len(T00[0]))
       t = time.time()
       delta = 0.01
       print(np.max(np.sum(T00, axis=2)))
@@ -291,6 +299,64 @@ class DemoTestCase2(unittest.TestCase):
 
       print(np.argmax(sol['x']))
       print(min(sol['x']))
+
+
+  def test_basicv3(self):
+    #(c: object, Aiq: object, biq: object, Aeq: object, beq: object, J_int: object, J_bin: object, output: object) -> object:
+    T00 = np.array([[[0, 1, 0, 0],
+                    [0, 0, 0.5, 0.5],
+                    [1, 0, 0, 0],
+                    [0, 0, 0, 1]]]);
+
+    t = time.time()
+    delta = 0.01
+    print(np.sum(T00, axis=2))
+    print('var to max', len(T00[0]) - 1)
+    model, sol = solve_pure_occ(T00.tolist(), [len(T00[0]) - 1], 1, delta)
+
+    Tlist = T00.tolist()
+    print(time.time() - t)
+
+    print(np.argmax(sol['x']))
+    print(min(sol['x']))
+
+
+  def test_occupationv3(self):
+
+    # nondeterministic problem, compare solutions
+    network = POMDPNetwork()
+
+    T0 = np.array([[0, 1, 0, 0],
+                   [0, 0, 0.5, 0.5],
+                   [1, 0, 0, 0],
+                   [0, 0, 0, 1]]);
+
+    network.add_pomdp(POMDP([T0], input_names=['a'], state_name='s'))
+
+    T0 = np.array([[1, 0],
+                   [0, 1]]);
+    T1 = np.array([[0, 1],
+                   [0, 1]]);
+
+    network.add_pomdp(POMDP([T0, T1], input_names=['l'], state_name='q'))
+
+    network.add_connection(['s'], 'l', lambda s: {0: set([0]), 1: set([0]), 2: set([1]),  3: set([0])}[s])
+
+    # Define target set
+    accept = np.zeros((4,2))
+    accept[:,1] = 1
+
+    val_list, pol_list = solve_reach(network, accept)
+    print("reachprob", val_list[0][0, 0])
+    P_asS = diagonal(get_T_uxXz(network.pomdps['s']), 2, 3)
+    P_lqQ = diagonal(get_T_uxXz(network.pomdps['q']), 2, 3)
+    conn = network.connections[0][2].transpose()
+    strat = np.array([[0]*(P_asS.shape[2]),[1]*(P_asS.shape[2])]).transpose()
+    strat = strat[conn]
+    delta = 0.01
+    print(P_asS[0].todense(),)
+    model,reach_prob = solve_ltl(P_asS, P_lqQ, strat,0, s0=0, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][0, 0],decimal=4)
 
 
 if __name__ == "__main__":

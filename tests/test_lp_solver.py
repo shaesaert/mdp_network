@@ -19,6 +19,7 @@ __status__ = "Draft"
 import unittest
 
 import gurobipy as grb
+import best.solvers.optimization_wrappers
 
 from best.solvers.occupation_lp import *
 
@@ -160,13 +161,21 @@ class test_lp_solvers(unittest.TestCase):
 
 
     def test_func(self):
-        P = [[[1, 0, 0], [0, 1, 0], [0, 0, 1]], [[.5, .2, .3], [.4, .6, 0], [0, 0, 1]]]
+        P = np.array( [[[1,   0,  0], [0,   1, 0], [0, 0, 1]],
+                       [[.5, .2, .3], [.4, .6, 0], [0, 0, 1]]] )
         T = 2  # the target state is the last state :)
         S0 = 0  # the initial state
         delta = 0.01
+        #(c: object, Aiq: object, biq: object, Aeq: object, beq: object, J_int: object, J_bin: object, output: object) -> object:
 
-        sol = solve_pure_occ(P,T,S0,delta)
-        print(sol)
+        Aiq = P[:,0:-1,0:-1]
+        c = P[:,0:-1, -1]
+
+
+
+
+        # sol = best.solvers.optimization_wrappers._solve_gurobi(P,T,S0,delta)
+        # print(sol)
 
 if __name__ == "__main__":
     unittest.main()
