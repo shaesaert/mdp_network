@@ -95,84 +95,83 @@ def solve_exact(P_asS, P_lqQ, conn_mat, s0, q0, q_target):
         print("solver returned {}".format(sol['status']))
         return -1, -1
 
-
 def solve_delta(P_asS, P_lqQ, conn_mat, delta, s0, q0, q_target):
-    t = time.time()
-    na = P_asS.shape[0]  # number of actions of MDP
-    ns = P_asS.shape[1]  # number of states of MDP
-    nl = P_lqQ.shape[0]  # number of labels of DFA
-    nq = P_lqQ.shape[1]  # number of states of DFA
-    nk = nl * 2 + 2
+  t = time.time()
+  na = P_asS.shape[0]  # number of actions of MDP
+  ns = P_asS.shape[1]  # number of states of MDP
+  nl = P_lqQ.shape[0]  # number of labels of DFA
+  nq = P_lqQ.shape[1]  # number of states of DFA
+  nk = nl*2+2
 
-    if q_target != nq - 1:
-        raise Exception("case q_target not equal to highest q not implemented")
+  if q_target != nq-1:
+    raise Exception("case q_target not equal to highest q not implemented")
 
-    idx_notarget = [i for i in range(nq) if i != q_target]
-    idx_target = [q_target]
-    P_lqQ_notarget = P_lqQ[:, :, idx_notarget]
-    P_lqQ_notarget = P_lqQ_notarget[:, idx_notarget, :]  # transitions from Q \ T to Q \ T
-    P_lqQ_sep = P_lqQ[:, idx_notarget, :]
-    P_lqQ_sep = P_lqQ_sep[:, :, idx_target]  # transitions from Q \ T to T
+  idx_notarget = [i for i in range(nq) if i != q_target]
+  idx_target = [q_target]
+  P_lqQ_notarget = P_lqQ[:, :, idx_notarget]
+  P_lqQ_notarget = P_lqQ_notarget[:, idx_notarget, :]  # transitions from Q \ T to Q \ T
+  P_lqQ_sep = P_lqQ[:, idx_notarget, :]
+  P_lqQ_sep = P_lqQ_sep[:, :, idx_target]              # transitions from Q \ T to T
 
-    nq_notarget = nq - len(idx_target)
+  nq_notarget = nq - len(idx_target)
 
-    num_varP = 1  # objective (reach probability)
-    num_varX = na * ns * nq_notarget  # x variable (occupation measures)
+  num_varP = 1                      # objective (reach probability)
+  num_varX = na * ns * nq_notarget  # x variable (occupation measures)
 
-    P_lS = sparse.COO(conn_mat)
+  P_lS = sparse.COO(conn_mat)
 
-    ##################
-    # Constraint 12b #
-    ##################
+  ##################
+  # Constraint 12b #
+  ##################
 
-    # right-hand side
-    sum_a = sparse.COO([range(na)], np.ones(na))
-    R_aSsQq = sparse.tensordot(sum_a, sparse.tensordot(sparse.eye(ns), sparse.eye(nq_notarget), axes=-1), axes=-1)  #
-    R_b_QS_asq = R_aSsQq.transpose([3, 1, 0, 2, 4]).reshape([ns * nq_notarget, na * ns * nq_notarget])
+  # right-hand side
+  sum_a = sparse.COO([range(na)], np.ones(na))
+  R_aSsQq = sparse.tensordot(sum_a, sparse.tensordot(sparse.eye(ns), sparse.eye(nq_notarget), axes=-1), axes=-1) #
+  R_b_QS_asq = R_aSsQq.transpose([3, 1, 0, 2, 4]).reshape([ns * nq_notarget, na * ns * nq_notarget])
 
-    # left-hand side
-    L_SlQasq = sparse.tensordot(P_asS, P_lqQ_notarget, axes=-1).transpose([2, 3, 5, 0, 1, 4])  #
-    L_SQasqS = sparse.tensordot(L_SlQasq, P_lS, axes=[[1], [0]])
-    L_QSasq = np.diagonal(L_SQasqS.todense(), axis1=0, axis2=5).transpose([0, 4, 1, 2, 3])
-    L_QS_asq_sp = sp.csr_matrix(L_QSasq.reshape([nq_notarget * ns, na * ns * nq_notarget]))
+  # left-hand side
+  L_SlQasq = sparse.tensordot(P_asS, P_lqQ_notarget, axes=-1).transpose([2, 3, 5, 0, 1, 4]) #
+  L_SQasqS = sparse.tensordot(L_SlQasq, P_lS, axes=[[1], [0]])
+  L_QSasq = diagonal(L_SQasqS, axis1=0, axis2=5).transpose([0,4,1,2,3])
+  L_QS_asq_sp = L_QSasq.reshape([nq_notarget * ns, na * ns * nq_notarget]).to_scipy_sparse()
 
-    # TODO: indexing needs fix to have q_target not being the last one
-    b_iq_b = np.zeros(ns * nq_notarget)
-    b_iq_b[np.ravel_multi_index((s0, q0), (ns, nq_notarget))] = 1.
+  # TODO: indexing needs fix to have q_target not being the last one
+  b_iq_b = np.zeros(ns * nq_notarget)
+  b_iq_b[np.ravel_multi_index((s0, q0), (ns, nq_notarget))] = 1.
 
-    c = Constraint(A_iq=sp.bmat([[sp.coo_matrix((ns * nq_notarget, num_varP)),
-                                  R_b_QS_asq.to_scipy_sparse() - L_QS_asq_sp]]),
-                   b_iq=b_iq_b)
+  c = Constraint(A_iq=sp.bmat([[sp.coo_matrix((ns * nq_notarget, num_varP)),
+                                R_b_QS_asq.to_scipy_sparse() - L_QS_asq_sp]]),
+                 b_iq=b_iq_b)
 
-    ##################
-    # Constraint 12c #
-    ##################
+  ##################
+  # Constraint 12c #
+  ##################
 
-    # right-hand side
-    R_e_asSlqQ = sparse.tensordot(P_asS, P_lqQ_sep, axes=-1)  #
-    R_e_Slasq = R_e_asSlqQ.sum(axis=[5]).transpose([2, 3, 0, 1, 4])  #
-    R_asq = sparse.tensordot(R_e_Slasq, P_lS, axes=[[1, 0], [0, 1]])
-    R_asq_sp = R_asq.reshape([1, na * ns * nq_notarget]).to_scipy_sparse()
+  # right-hand side
+  R_e_asSlqQ = sparse.tensordot(P_asS, P_lqQ_sep, axes=-1)     #
+  R_e_Slasq = R_e_asSlqQ.sum(axis=[5]).transpose([2,3,0,1,4])  #
+  R_asq = sparse.tensordot(R_e_Slasq, P_lS, axes=[[1, 0], [0, 1]])
+  R_asq_sp = R_asq.reshape([1, na*ns*nq_notarget]).to_scipy_sparse()
 
-    c &= Constraint(A_iq=sp.bmat([[1, -R_asq_sp]]), b_iq=[0])
+  c &= Constraint(A_iq=sp.bmat([[1, -R_asq_sp]]), b_iq=[0])
 
-    ##################
-    #### Solve it ####
-    ##################
+  ##################
+  #### Solve it ####
+  ##################
 
-    objective = np.ones(num_varP + num_varX) * delta
-    objective[0] = -1  # maximize P
-    t_init = time.time()
-    print(["Initiate solver: ", t_init - t])
-    sol = solve_ilp(objective, c, J_int=[])
-    t_solve = time.time()
-    print(["Run solver: ", t_solve - t_init])
+  objective = np.ones(num_varP + num_varX)*delta
+  objective[0] = -1  # maximize P
+  t_init = time.time()
+  print(["Initiate solver: ", t_init- t] )
+  sol = solve_ilp(objective, c, J_int=[])
+  t_solve = time.time()
+  print(["Run solver: ", t_solve-t_init])
 
-    if sol['status'] == 'optimal':
-        return -sol['primal objective'], sol['x'][num_varP: num_varP + num_varX].reshape((na, ns, nq_notarget))
-    else:
-        print("solver returned {}".format(sol['status']))
-        return -1, -1
+  if sol['status'] == 'optimal':
+    return -sol['primal objective'], sol['x'][num_varP: num_varP+num_varX].reshape((na, ns, nq_notarget))
+  else:
+    print("solver returned {}".format(sol['status']))
+    return -1, -1
 
 
 def solve_robust(P_asS, P_lqQ, conn_mat, s0, q0, q_target):

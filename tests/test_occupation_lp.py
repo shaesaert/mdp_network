@@ -3,6 +3,7 @@ import unittest
 from best.models.pomdp import POMDP, POMDPNetwork
 from best.models.pomdp_sparse_utils import get_T_uxXz, diagonal
 from best.solvers.occupation_lp import *
+from best.solvers.occupation_lp_new import *
 from best.solvers.valiter import solve_reach
 import numpy as np
 
@@ -46,11 +47,17 @@ class DemoTestCase2(unittest.TestCase):
     reach_prob, _ = solve_exact(P_asS, P_lqQ, conn, s0=0, q0=0, q_target=1)
     np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
 
+    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=0, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
+
 
     reach_prob, _ = solve_robust(P_asS, P_lqQ, conn, s0=1, q0=0, q_target=1)
     np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
 
     reach_prob, _ = solve_exact(P_asS, P_lqQ, conn, s0=1, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
+
+    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=1, q0=0, q_target=1)
     np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
 
 
@@ -60,9 +67,11 @@ class DemoTestCase2(unittest.TestCase):
     reach_prob, _ = solve_exact(P_asS, P_lqQ, conn, s0=2, q0=0, q_target=1)
     np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
 
+    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=2, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
+
 
   def test_occupation2(self):
-    import numpy as np
     # nondeterministic problem without solution
     network = POMDPNetwork()
 
@@ -87,7 +96,7 @@ class DemoTestCase2(unittest.TestCase):
     accept[:,1] = 1
 
     val_list, pol_list = solve_reach(network, accept)
-    print(get_T_uxXz(network.pomdps['s']).todense())
+
     P_asS = diagonal(get_T_uxXz(network.pomdps['s']), 2, 3)
     P_lqQ = diagonal(get_T_uxXz(network.pomdps['q']), 2, 3)
     conn = network.connections[0][2]
@@ -101,6 +110,16 @@ class DemoTestCase2(unittest.TestCase):
 
     model, reach_prob = solve_ltl(P_asS, P_lqQ, strat, 0, s0=2, q0=0, q_target=1)
     np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][0, 0])
+
+    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=0, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
+
+    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=1, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
+
+    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=2, q0=0, q_target=1)
+    np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
+
 
   def test_demo(self):
     from Demos.demo_Models import simple_robot
