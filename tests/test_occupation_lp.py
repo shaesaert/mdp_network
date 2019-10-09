@@ -99,7 +99,7 @@ class DemoTestCase2(unittest.TestCase):
 
     P_asS = diagonal(get_T_uxXz(network.pomdps['s']), 2, 3)
     P_lqQ = diagonal(get_T_uxXz(network.pomdps['q']), 2, 3)
-    conn = network.connections[0][2]
+    conn = network.connections[0][2].transpose()
     strat = np.array([[0]*(P_asS.shape[2]),[1]*(P_asS.shape[2])]).transpose()
     strat = strat[conn]
     model,reach_prob = solve_ltl(P_asS, P_lqQ, strat,0, s0=0, q0=0, q_target=1)
