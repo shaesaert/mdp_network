@@ -105,7 +105,6 @@ class MDP1DFA1(unittest.TestCase):
         reach_prob, _ = solve_exact(self.mdp1, self.dfa1, conn, s0=2, q0=0, q_target=1)
         np.testing.assert_almost_equal(reach_prob, self.val_list[0][2, 0])
 
-
     def test_occupation_lp_new(self):
         conn = self.network.connections[0][2]
 
@@ -187,7 +186,7 @@ class MDP1DFA1(unittest.TestCase):
     def test_MDP1(self):
         t = time.time()
         delta = 0.01
-        model,sol = solve_pure_occ(self.mdp1.tolist(), [len(self.mdp1[0])-1], 0, delta)
+        model,sol = solve_pure_occ(self.mdp1.todense().tolist(), [len(self.mdp1[0])-1], 0, delta)
         print("Solution time", time.time()-t)
         print("Max occupancy state", np.argmax(sol['x']))
         print("Min occupancy value", min(sol['x']))
@@ -199,7 +198,6 @@ class BenchTests(unittest.TestCase):
         import polytope as pc
 
         self.Robot = simple_robot()
-
         self.Robot.input_space = pc.box2poly(np.kron(
             np.ones((self.Robot.m, 1)), np.array([[-1, 1]])))  # continuous set of inputs
         self.Robot.state_space = pc.box2poly(np.kron(
