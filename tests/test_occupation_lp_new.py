@@ -9,47 +9,6 @@ import numpy as np
 
 class OccupationLPTest(unittest.TestCase):
 
-  def test_occupation1(self):
-
-    # nondeterministic problem, compare solutions
-    network = POMDPNetwork()
-
-    T0 = np.array([[0, 1, 0, 0],
-                   [0, 0, 0.5, 0.5],
-                   [1, 0, 0, 0],
-                   [0, 0, 0, 1]]);
-
-    network.add_pomdp(POMDP([T0], input_names=['a'], state_name='s'))
-
-    T0 = np.array([[1, 0],
-                   [0, 1]]);
-    T1 = np.array([[0, 1],
-                   [0, 1]]);
-
-    network.add_pomdp(POMDP([T0, T1], input_names=['l'], state_name='q'))
-
-    network.add_connection(['s'], 'l', lambda s: {0: set([0]), 1: set([1]), 2: set([0]),  3: set([0])}[s])
-
-    # Define target set
-    accept = np.zeros((4,2))
-    accept[:,1] = 1
-
-    val_list, pol_list = solve_reach(network, accept)
-
-    P_asS = get_T_uxX(network.pomdps['s'])
-    P_lqQ = get_T_uxX(network.pomdps['q'])
-    conn = network.connections[0][2]
-
-    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=0, q0=0, q_target=1)
-    np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
-
-    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=1, q0=0, q_target=1)
-    np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
-
-    reach_prob, _ = occupation_lp_new(P_asS, P_lqQ, conn, s0=2, q0=0, q_target=1)
-    np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
-
-
   def test_occupation2(self):
     # nondeterministic problem without solution
     network = POMDPNetwork()

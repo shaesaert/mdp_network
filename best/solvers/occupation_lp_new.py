@@ -66,7 +66,7 @@ def occupation_lp_new(P_asS, P_lqQ, conn_mat, s0, q0, q_target, delta=0):
       # add sum over a
       new_row_suma_idx = np.ravel_multi_index((np.arange(na, dtype=np.uint32), np.ones(na, dtype=np.uint32) * S_it, np.ones(na, dtype=np.uint32) * F_it), (na, ns, nF))
       new_row[0, num_varP + new_row_suma_idx] = 1
-      
+
       # subtract sum over sqa
       for (a_it, s_it, f_it) in product(range(na), range(ns), range(nF)):
         q_it = F[f_it]
@@ -95,7 +95,7 @@ def occupation_lp_new(P_asS, P_lqQ, conn_mat, s0, q0, q_target, delta=0):
       b_iq = np.hstack([b_iq, 1 if S_it == s0 and Q_it == q0 else 0])
 
       # EQUALITY
-      
+
       # sum over asq
       new_block = np.zeros((nl, num_varP + num_varX + num_varD1))
       for l_it in range(nl):
@@ -103,7 +103,7 @@ def occupation_lp_new(P_asS, P_lqQ, conn_mat, s0, q0, q_target, delta=0):
         for (a_it, s_it, f_it) in product(range(na), range(ns), range(nF)):
           q_it = F[f_it]
           new_block[l_it, num_varP + np.ravel_multi_index((a_it, s_it, f_it), (na, ns, nF))] += P_asS[a_it, s_it, S_it] * P_lqQ[l_it, q_it, Q_it]
-        
+
 
       A_eq = sp.bmat([[A_eq], [sp.coo_matrix(new_block)]])
       b_eq = np.hstack([b_eq, np.zeros(nl)])
