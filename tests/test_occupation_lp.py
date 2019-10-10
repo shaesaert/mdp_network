@@ -8,8 +8,34 @@ from best.solvers.valiter import solve_reach
 import numpy as np
 import copy
 
-class DemoTestCase2(unittest.TestCase):
-    """Demo test case 2."""
+class MDP1DFA1(unittest.TestCase):
+    """
+          The test verifies the reachability of
+          the following DFA and MDP combination
+          MDP 1:
+          with states (0,..,3) and no actions.
+
+              [0] --> [1]--0.5->[2]   [3]
+                      |--0.5---------->|
+               |<----------------|
+
+          DFA 1: with label {l=1,l=0}
+
+               [0]-l=1->[[1]]
+
+          Connection:
+
+               {0: set([0]), 1: set([1]), 2: set([0]),3: set([0])}
+
+          In *test_occupation_lp*, the following tests have been implemented:
+
+          test_occupation1 tests MDP1 and DFA1:
+
+          | test  | s0 = 0| s0 = 1| s0 = 2 |
+          |-------|-------|-------|--------|
+          | rprob | 0.5    | 1    |   0    |
+        :return:
+        """
 
     def setUp(self):
 
@@ -44,87 +70,72 @@ class DemoTestCase2(unittest.TestCase):
         self.mdp1 = diagonal(get_T_uxXz(self.network.pomdps['s']), 2, 3)
         self.dfa1 = diagonal(get_T_uxXz(self.network.pomdps['q']), 2, 3)
 
-    def test_MDP1_and_DFA1_target1(self):
-        """
-          The test verifies the reachability of
-          the following DFA and MDP combination
-          MDP 1:
-          with states (0,..,3) and no actions.
-
-              [0] --> [1]--0.5->[2]   [3]
-                      |--0.5---------->|
-               |<----------------|
-
-          DFA 1: with label {l=1,l=0}
-
-               [0]-l=1->[[1]]
-
-          Connection:
-
-               {0: set([0]), 1: set([1]), 2: set([0]),3: set([0])}
-
-          In *test_occupation_lp*, the following tests have been implemented:
-
-          test_occupation1 tests MDP1 and DFA1:
-
-          | test  | s0 = 0| s0 = 1| s0 = 2 |
-          |-------|-------|-------|--------|
-          | rprob | 0.5    | 1    |   0    |
-        :return:
-        """
-
-
-        # Define target set for value iteration
         accept = np.zeros((4,2))
         accept[:,1] = 1
 
-        val_list, pol_list = solve_reach(self.network, accept)
+        self.val_list, pol_list = solve_reach(self.network, accept)
 
 
+    def test_solve_robust(self):
 
+        # Define target set for value iteration
+        conn = self.network.connections[0][2]
+
+        #  test with s0=0
+        reach_prob, _ = solve_robust(self.mdp1, self.dfa1, conn, s0=0, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][0, 0])
+
+        #  test with s0=1
+        reach_prob, _ = solve_robust(self.mdp1, self.dfa1, conn, s0=1, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][1, 0])
+
+        #  test with s0=2
+        reach_prob, _ = solve_robust(self.mdp1, self.dfa1, conn, s0=2, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][2, 0])
+
+    def test_solve_exact(self):
+        conn = self.network.connections[0][2]
+
+        reach_prob, _ = solve_exact(self.mdp1, self.dfa1, conn, s0=0, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][0, 0])
+        #  test with s0=1
+        reach_prob, _ = solve_exact(self.mdp1, self.dfa1, conn, s0=1, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][1, 0])
+        #  test with s0=2
+        reach_prob, _ = solve_exact(self.mdp1, self.dfa1, conn, s0=2, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][2, 0])
+
+
+    def test_occupation_lp_new(self):
+        conn = self.network.connections[0][2]
+
+        reach_prob, _ = occupation_lp_new(self.mdp1, self.dfa1, conn, s0=0, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][0, 0])
+        #  test with s0=1
+        reach_prob, _ = occupation_lp_new(self.mdp1, self.dfa1, conn, s0=1, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][1, 0])
+
+        #  test with s0=2
+        reach_prob, _ = occupation_lp_new(self.mdp1, self.dfa1, conn, s0=2, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob, self.val_list[0][2, 0])
+
+
+    def test_solve_ltl(self):
         conn = self.network.connections[0][2]
 
         strat = np.array([[0]*(self.mdp1.shape[2]),[1]*(self.mdp1.shape[2])]).transpose()
         strat = strat[conn.transpose()]
 
-        #  test with s0=0
-        reach_prob, _ = solve_robust(self.mdp1, self.dfa1, conn, s0=0, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
-
-        reach_prob, _ = solve_exact(self.mdp1, self.dfa1, conn, s0=0, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
-
-        reach_prob, _ = occupation_lp_new(self.mdp1, self.dfa1, conn, s0=0, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][0, 0])
-
         model,reach_prob = solve_ltl(self.mdp1, self.dfa1, strat,0, s0=0, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][0, 0])
-
+        np.testing.assert_almost_equal(reach_prob['primal objective'], self.val_list[0][0, 0])
         #  test with s0=1
-        reach_prob, _ = solve_robust(self.mdp1, self.dfa1, conn, s0=1, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
-
-        reach_prob, _ = solve_exact(self.mdp1, self.dfa1, conn, s0=1, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
-
-        reach_prob, _ = occupation_lp_new(self.mdp1, self.dfa1, conn, s0=1, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][1, 0])
-
-        model, reach_prob = solve_ltl(self.mdp1, self.dfa1, strat, 0, s0=1, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][1, 0])
-
-        #  test with s0=2
-        reach_prob, _ = solve_robust(self.mdp1, self.dfa1, conn, s0=2, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
-
-        reach_prob, _ = solve_exact(self.mdp1, self.dfa1, conn, s0=2, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
-
-        reach_prob, _ = occupation_lp_new(self.mdp1, self.dfa1, conn, s0=2, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob, val_list[0][2, 0])
-
         model, reach_prob = solve_ltl(self.mdp1, self.dfa1, strat, 0, s0=2, q0=0, q_target=1)
-        np.testing.assert_almost_equal(reach_prob['primal objective'], val_list[0][2, 0])
+        np.testing.assert_almost_equal(reach_prob['primal objective'], self.val_list[0][2, 0])
+        #  test with s0=2
+        model, reach_prob = solve_ltl(self.mdp1, self.dfa1, strat, 0, s0=1, q0=0, q_target=1)
+        np.testing.assert_almost_equal(reach_prob['primal objective'], self.val_list[0][1, 0])
+
+
 
     def test_MDP1_and_DFA1_target1_nondet(self):
         """
