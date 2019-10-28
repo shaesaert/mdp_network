@@ -4,18 +4,7 @@
 Long explanation
 """
 
-# list of imports:
 
-
-# List of info
-__author__ = "Sofie Haesaert"
-__copyright__ = "Copyright 2018, TU/e"
-__credits__ = ["Sofie Haesaert"]
-__license__ = "BSD3"
-__version__ = "1.0"
-__maintainer__ = "Sofie Haesaert"
-__email__ = "s.haesaert@tue.nl"
-__status__ = "Draft"
 import unittest
 
 import gurobipy as grb
@@ -96,7 +85,6 @@ class test_lp_solvers(unittest.TestCase):
         model.setObjective(obj, grb.GRB.MAXIMIZE)
         model.optimize()
         print(y)
-
 
     def test_lp_prob_v2(self):
 

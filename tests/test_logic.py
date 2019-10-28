@@ -26,6 +26,5 @@ class TEST_LOGIC(unittest.TestCase):
     np.testing.assert_almost_equal(pm.T((0,1,0)).todense(), np.array([[1,0], [1,0]]))
     np.testing.assert_almost_equal(pm.T((1,1,1)).todense(), np.array([[0,1], [0,1]]))
 
-
 if __name__ == "__main__":
     unittest.main()

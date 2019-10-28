@@ -279,7 +279,7 @@ def solve_ltl(P_asS, P_lqQ, strat, delta, s0, q0, q_target):
                 else:
                     prob = 0
                 x_qsa[q, s, a] = model.addVar(vtype=grb.GRB.CONTINUOUS,
-                                              obj=-delta+prob)
+                                              obj=-delta+prob, name = "x_%d_%d_%d" %(q,s,a))
 
     print('added variables', time.time()-t)
 
@@ -310,7 +310,9 @@ def solve_ltl(P_asS, P_lqQ, strat, delta, s0, q0, q_target):
     sol = {}
     if model.status == grb.GRB.status.OPTIMAL:
         sol['x'] = np.array([var.x for var in x_qsa.values()])
-        sol['primal objective'] = model.objVal
+        sol['indices'] = np.array([(q,s,a) for q,s,a in x_qsa.keys()])
+
+    sol['primal objective'] = model.objVal
     if model.status in [2, 3, 5]:
         sol['rcode'] = model.status
     else:

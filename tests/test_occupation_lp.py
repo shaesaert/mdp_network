@@ -193,9 +193,11 @@ class MDP1DFA1(unittest.TestCase):
 
 
 class BenchTests(unittest.TestCase):
+
     def setUp(self):
         from Demos.demo_Models import simple_robot
         import polytope as pc
+        from Reduce.Gridding import grid
 
         self.Robot = simple_robot()
         self.Robot.input_space = pc.box2poly(np.kron(
@@ -208,15 +210,14 @@ class BenchTests(unittest.TestCase):
 
         print("-------Grid the robots state space------")
         #  set the state spaces:
-        from Reduce.Gridding import grid as griddd
-
 
         d_opt = np.array([[0.69294], [0.721]])  # tuned gridding ratio from a previous paper
         d = 0.6 * d_opt  # with distance measure 0.6=default
         un = 3
 
-        Ms, srep  = griddd(self.Robot, d, un=un)
+        from Reduce.Gridding import grid
 
+        Ms, srep  = grid(self.Robot, d, un=un)
 
         T00 = Ms.transition
         print(len(T00[0]))
@@ -227,12 +228,7 @@ class BenchTests(unittest.TestCase):
 
         print(time.time()-t)
 
-
     def test_demo(self):
-        from Demos.demo_Models import simple_robot
-        import polytope as pc
-        import numpy as np
-
 
         print("-------Grid the robots state space------")
         #  set the state spaces:
@@ -251,7 +247,6 @@ class BenchTests(unittest.TestCase):
         T00 = Ms.transition
 
         network.add_pomdp(POMDP(T00, input_names=['a'], state_name='s'))
-
         T0 = np.array([[1, 0],
                        [0, 1]]);
         T1 = np.array([[0, 1],
