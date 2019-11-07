@@ -78,6 +78,16 @@ class LTI:
         print('keep matrix Bw')
         return self.bw
 
+  def __str__(self):
+    abcd = ['A = ', self.a.__str__()]
+    abcd += ['\n , B =', self.b.__str__()]
+    abcd += ['\n , C = ', self.c.__str__()]
+    abcd += ['\n , D = ', self.d.__str__()]
+    abcd += ['\n , W = ', self.W.__str__()]
+
+
+    return ''.join(abcd)
+
   def normalize(self):
     # compute svd
     # compute singular value decomposition

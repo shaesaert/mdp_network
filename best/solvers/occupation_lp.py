@@ -234,7 +234,7 @@ def solve_robust(P_asS, P_lqQ, conn_mat, s0, q0, q_target):
         return -1, -1
 
 
-def solve_ltl(P_asS, P_lqQ, strat, delta, s0, q0, q_target):
+def solve_ltl(P_asS: np.ndarray, P_lqQ: np.ndarray, strat, delta, s0, q0, q_target):
     """
 
     :param P_asS:  TRansition matrix of the MDP
@@ -290,7 +290,7 @@ def solve_ltl(P_asS, P_lqQ, strat, delta, s0, q0, q_target):
 
             model.addConstr(grb.quicksum(x_qsa[qn, sn, a] for a in range(na))
                             - grb.quicksum(x_qsa[q,s, a] * P_asS[a,s,sn] for q in QT for a in range(na)
-                            for s in range(nS) if ((P_lqQ[strat[sn], q, qn]==1))) <= rhs )
+                            for s in range(nS) if ((P_lqQ[strat[sn], q, qn]==1))) <= rhs)
     print('added constraints', time.time()-t)
 
 
