@@ -94,7 +94,10 @@ abstr = LTIGrid(lti_n, d.flatten(), un=3 )
 fig = plt.figure()
 ax0 = fig.add_subplot(111)
 abstr.plot(ax0)
-
+abstr.eps=0.5 # (computed 1 is conservative as it is compute
+# for any location of the reference point.
+# Choosing the grid center gives a reduction to 0.5 (originally 1)
+# # todo: fix this in the epsilon computations.)
 # plot regions
 for _, poly_set in regions.items():
 
@@ -105,7 +108,7 @@ for _, poly_set in regions.items():
 
 print (abstr.mdp)
 print ('before prune: nnz: {}, sparsity: {}'.format(abstr.mdp.nnz, abstr.mdp.sparsity))
-abstr.mdp.prune(1e-6)
+abstr.mdp.prune(1e-10)
 print ('after prune: nnz: {}, sparsity: {}'.format(abstr.mdp.nnz, abstr.mdp.sparsity))
 
 
@@ -163,7 +166,7 @@ Robotmdp = diagonal(get_T_uxXz(network.pomdps['s']), 2, 3)
 import itertools
 stacked =  [np.array(network.pomdps['mu'].T((col,pac,obs)).todense())
             for col,pac,obs in itertools.product([0,1],[0,1],[0,1])]
-Robotdfa = np.stack(stacked    ,axis=0)
+Robotdfa = np.stack(stacked ,axis=0)
 
 #%%
 
@@ -176,7 +179,6 @@ strat = 4 * (1-np.int_(network.connections[0][2][0])) \
         +  1 * (np.int_(network.connections[2][2][1]))
 
 
-delta = 0.01
 
 
 #%%
@@ -190,12 +192,12 @@ s_list = abstr.x_to_all_s(np.array([[-9],[-9]]))
 print(s_list)
 model,reach_prob = solve_ltl(Robotmdp, Robotdfa, strat,0.00001, s0=max(s_list), q0=0, q_target=1)
 
-file = open('./reachres.json', 'w+')
-file2 = open('./model.json', 'w+')
 
-json.dump(reach_prob, file)
-json.dump(model, file2)
+import pickle
 
+f = open('store.pckl', 'wb')
+pickle.dump([reach_prob,model], f)
+f.close()
 
 
 #%%
@@ -205,7 +207,7 @@ import matplotlib.pyplot as plt
 
 m = scipy.sparse.coo_matrix((reach_prob['x'],
                              (np.array(reach_prob['indices'])[::,1],
-                              np.array(reach_prob['indices'])[::,2])))
+                              np.array(reach_prob['indices'])[::,2]))).todense()
 Pol = m.argmax(1)
 Z = m.sum(1)
 
@@ -219,7 +221,8 @@ fig, (ax0, ax1) = plt.subplots(2, 1)
 
 ax0.pcolorfast((-10,10),(-10,10),np.array(Pol))
 ax1.pcolorfast((-10,10),(-10,10),np.array(Z))
-plt.show()
+# plt.show()
+plt.savefig('polZ.eps', format='eps')
 
 
 
@@ -258,12 +261,16 @@ x= xy[::,0]
 y= xy[::,1]
 print(abstr.ud_to_u(0)[0])
 print('test',np.concatenate([[abstr.ud_to_u(p)] for p in range(9) ]))
-dxy =np.concatenate([[[abstr.ud_to_u(p[0])]] for p in Pol ] )
-print(Pol.shape)
+dxy =np.concatenate([[abstr.ud_to_u(p[0])] for p in Pol ] )
 
-print('test', dxy[::,0])
-plt.arrow(x, y, dxy[::,0], dxy[::,0])
+print('test', dxy[:,0])
+print([x, y, dxy[:,0], dxy[:,1]])
+plt.arrow(x, y, dxy[:,0], dxy[:,1])
 # ax1.pcolorfast((-10,10),(-10,10),np.array(Pol))
 ax0.pcolorfast((-10,10),(-10,10),np.array(Z))
 
-plt.show()
+# plt.show()
+plt.savefig('poldir.eps', format='eps')
+
+
+

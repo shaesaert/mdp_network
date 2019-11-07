@@ -287,10 +287,13 @@ def solve_ltl(P_asS: np.ndarray, P_lqQ: np.ndarray, strat, delta, s0, q0, q_targ
         for sn in range(nS):  # compute occupation
 
             rhs = 1 if (sn == s0) & (qn == q0) else 0
-
+            Qsn = [q for q in QT if P_lqQ[strat[sn], q, qn]==1]
+            # model.addConstr(grb.quicksum(x_qsa[qn, sn, a] for a in range(na))
+            #                 - grb.quicksum(x_qsa[q,s, a] * P_asS[a,s,sn] for q in QT for a in range(na)
+            #                 for s in range(nS) if ((P_lqQ[strat[sn], q, qn]==1))) <= rhs)
             model.addConstr(grb.quicksum(x_qsa[qn, sn, a] for a in range(na))
-                            - grb.quicksum(x_qsa[q,s, a] * P_asS[a,s,sn] for q in QT for a in range(na)
-                            for s in range(nS) if ((P_lqQ[strat[sn], q, qn]==1))) <= rhs)
+                            - grb.quicksum(x_qsa[q,s, a] * P_asS[a,s,sn] for q in Qsn for a in range(na)
+                                           for s in range(nS)), grb.GRB.LESS_EQUAL ,rhs)
     print('added constraints', time.time()-t)
 
 
@@ -299,10 +302,10 @@ def solve_ltl(P_asS: np.ndarray, P_lqQ: np.ndarray, strat, delta, s0, q0, q_targ
     # model.optimize()
 
     # Attempt to set an initial feasible solution (in this case to an optimal solution)
-    for q in QT:
-        for s in range(nS):
-            for a in range(na):
-                x_qsa[q, s, a].start = 0
+    # for q in QT:
+    #     for s in range(nS):
+    #         for a in range(na):
+    #             x_qsa[q, s, a].start = 0
 
     model.optimize()
 
